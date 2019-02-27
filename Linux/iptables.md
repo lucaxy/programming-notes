@@ -43,8 +43,8 @@
 `-P` 设置默认策略(ACCEPT,DROP,REJECT)  
 `-E` 重命名自定义链，引用计数不为0的不能重命名，也不能删除  
 规则管理：  
-`-A`追加
-`-I`插入  
+`-A`追加  
+`-I`插入，在指定条目前面  
 `-D`删除，指定条件或编号  
 `-R`替换指定规则  
 
@@ -59,8 +59,8 @@
 `-o`流出接口，仅能用于OUTPUT，FORWARD，POSTROUTING  
 
 扩展匹配：  
-`-m`扩展名，`-p`指明协议后可省略`-m`,例如：`-m tcp -dport 22`源端口22  
-`-m tcp -sport 22`目标端口22  `--tcp-flags LIST1 LIST2`:检查LIST1中标志位，其中LIST2中必须为1，其余为0  
+`-m`扩展名，`-p`指明协议后可省略`-m`,例如：`-m tcp --dport 22`源端口22  
+`-m tcp --sport 22`目标端口22  `--tcp-flags LIST1 LIST2`:检查LIST1中标志位，其中LIST2中必须为1，其余为0  
 TCP六种标志位（SYN,ACK,FIN,RST,PSH,URG），例如` --tcp-flags SYN,ACK,FIN,RST SYN`第一次握手，简写为`--syn`  
 `-m udp`udp,`--sport`,`--dport`  
 `-m icmp`icmp,`--icmp-type`可用数字表示，0表示echo-reply，8表示echo-request  
@@ -71,7 +71,7 @@ SNAT源地址转换，MASQUERADE地址伪装，或自定义链规则等
 #### 扩展
 `rpm -ql iptables | grep "[[:lower:]]\+\.so$"`,大写为target，小写是可使用的扩展  
 `man iptables-extension`Centos7  
-`multiport`最多15个离散端口，`--sports 22,1024:1080`22端口和1024到1080的所有端口，`-dports`  
+`multiport`最多15个离散端口，`--sports 22,1024:1080`22端口和1024到1080的所有端口，`--dports`  
 `iprange`,`--src-range`,`--dst-range`指定ip范围，用`-`分割  
 `string`检查报文中字符串，`-algo`比对算法，bm和kmp，`--string patern`,`--hex-string`,`--from --to`  
 `time`,根据报文到达时间和指定时间进行匹配`--datestart`,`--datestop`,`--timestart`,`--timestop`  
@@ -98,7 +98,15 @@ CentOS6中`service iptables save`相当于`iptables-save > /etc/sysconfig/iptabl
 `service iptables restart`  
 CentOS7中`yum install  iptables-services`  
 并非真的服务，只是重新加载配置文件或清空配置文件  
-firewalld:https://www.ibm.com/developerworks/cn/linux/1507_caojh/
+firewalld:https://www.ibm.com/developerworks/cn/linux/1507_caojh/  
+##### 日常规则
+```shell
+/sbin/iptables -I INPUT 1 -i lo -j ACCEPT
+/sbin/iptables -I INPUT 2 -m state --state ESTABLISHED,RELATED -j ACCEPT
+/sbin/iptables -I INPUT 3 -p tcp -m multiport --dports 22,80,443 -j ACCEPT
+/sbin/iptables -I INPUT 4 -p tcp --dport 3306 -j DROP
+/sbin/iptables -I INPUT 5 -p icmp -m icmp --icmp-type 8 -j ACCEPT
+```
 ##### 网络防火墙
 开启核心转发：`sysctl -w net.ipv4.ip_forward=1`  
 开放内网ftp服务，同主机防火墙  
@@ -106,7 +114,7 @@ firewalld:https://www.ibm.com/developerworks/cn/linux/1507_caojh/
 开放dns服务：53/udp（INPUT，OUTPUT）  
 nat为安全而生，在网络层和传输层实现  
 `iptables -t nat -A POSTROUTING -s 192.168.20.0/24 ! -d 192.168.20.0/24 -j SNAT --to-source 172.16.100.9`  
-`iptables -t nat -A PREROUTING -d 172.16.100.9 -p tcp -dport 80 -j DNAT --to-destination 192.168.20.2:8080`  
+`iptables -t nat -A PREROUTING -d 172.16.100.9 -p tcp --dport 80 -j DNAT --to-destination 192.168.20.2:8080`  
 地址伪装，自动替换合适IP（ADSL）  
 `iptables -t nat -A POSTROUTING -s 192.168.20.0/24 ! -d 192.168.20.0/24 -j MASQUERADE`  
 ip地址工作在内核空间，能访问其中一个IP地址，其他的也能访问
