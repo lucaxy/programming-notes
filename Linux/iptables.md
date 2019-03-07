@@ -135,3 +135,14 @@ spawn: 启动一个额外命令
 `%s`服务端IP，`%c`客户端IP，`%d`程序名称  
 deny：allow文件中拒绝；allow:deny文件中allow  
 `vsftp:172.16.:deny`
+
+#### 无公网IP虚机上外网
+原理：通过SNAT代理上网，即日常局域网通过网关上网  
+1. 网关关闭firewalld，并禁止开机启动，打开iptables服务  
+2. 打开核心转发：net.ipv4.ip_forward=1，文件：/etc/sysctl.conf，命令：sysctl -p  
+3. 添加规则：`iptables -t nat -A POSTROUTING -o eth0 -s 192.168.1.0/24 -j SNAT --to 192.168.1.1`  
+4. 客户端添加路由：`route add default gw 192.168.1.1`  
+
+注意事项：  
+- 云上关闭虚机的MAC与IP绑定  
+- 网关与客户机要在同一个安全组  
