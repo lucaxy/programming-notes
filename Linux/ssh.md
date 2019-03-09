@@ -23,3 +23,9 @@ Host github.com
     PreferredAuthentications publickey
     User github_username
 ```
+
+#### dropbear
+1. 生成服务端密钥：`dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key -s 2048`  
+`dropbearkey -t dss -f /etc/dropbear/dropbear_dss_host_key`   
+2. 测试：`dropbear -p ip:port -F -E`，前台运行并显示错误  
+3. 后台运行：`dropbear -p ip:port`  
