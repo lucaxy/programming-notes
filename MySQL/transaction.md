@@ -31,6 +31,7 @@ Innodb支持行锁和表锁，Myisam仅支持表锁
 - 读已提交，READ COMMITTED，可能出现不可重复读和幻读  
 - 可重复读，REPEATABLE READ，可能出现幻读  
 - 可串行化，SERIALIZABLE，上述三种问题都可避免，但性能特别差  
+
 默认隔离级别是可重复读，修改隔离级别：  
 SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;  
 查询默认隔离级别：select @@tx_isolation,@@global.tx_isolation;  
