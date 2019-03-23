@@ -31,6 +31,7 @@ Read具体操作：进程向内核发起请求，内核读取文件到内核内�
 httpd -l查看编译的静态模块，httpd -M查看所有模块  
 特性：Indexs列出目录，FollowSymLinks符号链接，AllowOverride是否允许使用目录下的.htaccess，性能差一般都不使用  
 认证：basic，digest  
+htpasswd -c /usr/local/apache/passwd/.htpasswd rbowen
 ```ini
 AuthType basic
 AuthName "comment"
@@ -39,7 +40,22 @@ AuthGroupFile ""
 require valid-user
 require group GroupName
 ```
-htpasswd管理授权文件用户名密码，组文件手动创建，每行一个组，后面跟用户名  
+##### 2.4中的访问控制
+https://httpd.apache.org/docs/2.4/mod/mod_authz_core.html
+RequireAll中条件必须都要满足，RequireAny中满足一个即可，RequireNone满足其中条件的都是禁止的  
+其中RequireAny和RequireNone中不允许使用否定条件（require not），三者可以嵌套  
+不使用RequireXX标签时，表示RequireAny  
+```
+<RequireAll>
+    #Require all denied
+    Require all granted
+    Require not ip 10 172.20
+    Require not host public.company.com
+    Require expr "!(%{QUERY_STRING} =~ /secret/)"
+</RequireAll>
+```
+##### 路径重写
+http://httpd.apache.org/docs/current/rewrite/
 ### Nginx
 二次开源版：Tengine（支持动态模块）、Registry  
 特性：  
