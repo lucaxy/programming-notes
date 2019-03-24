@@ -70,18 +70,32 @@ http://httpd.apache.org/docs/current/rewrite/
 sendfile：直接从磁盘发送到网卡，不经过Nginx，仅支持小文件，sendfile64支持稍大的文件  
 flv伪流媒体：配合客户端播放器可实现拖拽播放  
 
-### 常用参数
+#### 常用参数
 worker_rlimit_nofile：worker打开最大文件数  
-worker_processes：worker数量，支持auto，一般为CPU数减一　　
+worker_processes：worker数量，支持auto，一般为CPU数减一  
 worker_cpu_affinity：CPU绑定，每个hash表示一个worker使用的CPU掩码，如：00000001 00000010  
 timer_resolution：时间解析度，可以减少查询系统时间，提高性能  
 worker_priority：nice值，值越小优先级越大，-20到19，默认是0，优先级是120  
 worker_connections：单个worker最大并发连接数  
 error_log：使用debug级别，需要编译时开启调试  
-tcp_nodelay：多次小请求合并成一个，延时会加大  
+tcp_nodelay：多次小请求合并成一个，off时延时会加大，需要开启Keep-Alive  
+tcp_nopush：与tcp_nodelay有相反的效果，on时有利于大文件的传输，需要开启sendfile  
 keepalive_timeout：默认75s  
 keepalive_disabled：禁用  
-防盗链：
+##### Nagle算法：  
+正常情况下，每发送一个报文，就需要一个确认报文（ACK），且立即发送，启用该算法后，当报文满足【MSS最大报文长度，FIN标识，  
+TCP_NODELAY，超时（200ms），所有ACK都已收到】之一，则允许发送，否则仅放入缓冲中，只允许一个未被ACK的包存在于网络，提高网  
+络吞吐量，降低了实时性。如果设置了TCP_CORK（tcp_nopush），即使所有ACK都已收到，依然放入缓冲中，等待适时发送，更进一步降  
+低了实时性。  
+典型Web服务器配置：  
+```ini
+sendfile   on;
+tcp_nopush on;
+keepalive_timeout 60;
+tcp_nodelay on;
+```
+
+##### 防盗链：
 ```
 location ~* \.(jpg|png|gif|jpeg)$ {
     valid_referer none blocked www.baidu.com;
@@ -91,6 +105,32 @@ location ~* \.(jpg|png|gif|jpeg)$ {
 }
 ```
 
-#### Web设置
+### Web服务器
 location：①精确匹配`=`，②非正则`^~`，③正则`~`或`~*`，自上而下，不区分是否带`*`，④一般路径，最长优先，顺序无关  
-### Nginx 反向代理
+alias：路径别名，即路径替换  
+error_page 404 404.html：定义响应码返回文件  
+rewrite：路径重写  
+if：条件判断，可以使用正则，-f文件，-d目录，-e文件存在性，-x执行权限  
+auth_basic：认证说明  
+auth_basic_user_file：用户密码文件  
+##### rewrite标志：
+- last，最后一个规则，让浏览器重新请求新路径，地址栏不显示新路径，用于内部跳转  
+- break，让浏览器重新请求新路径并不再检查该location内的rewrite规则，地址栏不显示新路径，用于内部跳转  
+- redirect，以302临时重定向返回新路径，地址栏显示新路径  
+- permanent，以301永久重定向返回新路径，地址栏显示新路径
+#### 反向代理
+ proxy_pass：当location为正则时，后端只能是host，不能加路径，否则视为语法错误    
+ proxy_set_header：为后端设置header，例如：X-Real-IP→$remote_addr
+ #### 缓存服务器
+ proxy_cache_path /path/to/cache/ levels=1:2 keys_zone=one:32m;(http中)
+ proxy_cache one;  
+ proxy_cache_valid 200 1d;  
+ chown www:www /path/to/cache  
+ #### 负载均衡
+ upstream（http中）  
+ proxy_pass  
+ #### fastcgi
+ fastcgi_pass  
+ fastcgi_cache  
+ 
+ 
